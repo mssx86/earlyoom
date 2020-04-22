@@ -1,24 +1,19 @@
 VERSION        = 1.6-apathy
+
+CC             = x86_64-apathy-linux-musl-gcc 
+CPPFLAGS       = -DVERSION=\"$(VERSION)\"
 LDFLAGS        = -s
-CFLAGS         = -std=gnu99 -fstack-protector-all \
-                 -march=native -mtune=native -O2  \
-                 -Wall -Wextra -Wformat-security  \
-                 -Wconversion -DVERSION=\"$(VERSION)\"
+CFLAGS         = -std=gnu99 -fstack-protector-all -march=native -mtune=native \
+                 -O2 -Wall -Wextra -Wformat-security -Wconversion
 
-PREFIX         = /sbin
-BINDIR         = /bin
-SYSCONFDIR     = /etc
+SRCS           = ./src/globals.c ./src/kill.c ./src/main.c ./src/meminfo.c ./src/msg.c
+OBJS           = ./src/globals.o ./src/kill.o ./src/main.o ./src/meminfo.o ./src/msg.o
 
-.PHONY: all clean install
+%.o: %.c
+	$(CC) -c -o $@ $< $(CPPFLAGS) $(LDFLAGS) $(CFLAGS)
 
-all: earlyoom
-
-earlyoom:
-	$(CC) $(LDFLAGS) $(CPPFLAGS) $(CFLAGS) -o earlyoom $(wildcard *.c)
+earlyoom: $(OBJS)
+	$(CC) -o $@ $^ $(CPPFLAGS) $(LDFLAGS) $(CFLAGS)
 
 clean:
 	rm -f earlyoom
-
-install: earlyoom
-	install -d        $(DESTDIR)$(PREFIX)$(BINDIR)/
-	install -m 755 $< $(DESTDIR)$(PREFIX)$(BINDIR)/
