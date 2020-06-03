@@ -1,10 +1,6 @@
-*~
-/earlyoom
-
-# generated from MANPAGE.md
-/earlyoom.1
-/earlyoom.1.gz
-
-# generated service files
-/earlyoom.service
-/earlyoom.initscript
+earlyoom
+globals.o
+kill.o
+main.o
+meminfo.o
+msg.o
