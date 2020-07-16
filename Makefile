@@ -1,8 +1,7 @@
 CC       = cc 
 CPPFLAGS = -DVERSION=\"1.6.1-apathy\"
-CFLAGS   = -std=gnu99 -fstack-protector-all -Os -Wall -Wextra \
-           -Wformat-security -Wconversion
-LDFLAGS  = -s
+CFLAGS   = -std=gnu99 -fstack-protector-all -O2 -w
+LDFLAGS  = -s -static
 
 SRC      = $(wildcard *.c)
 OBJ      = ${SRC:.c=.o}
