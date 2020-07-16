@@ -1,5 +1,5 @@
 CC       = cc 
-CPPFLAGS = -DVERSION=\"1.6-apathy\"
+CPPFLAGS = -DVERSION=\"1.6.1-apathy\"
 CFLAGS   = -std=gnu99 -fstack-protector-all -Os -Wall -Wextra \
            -Wformat-security -Wconversion
 LDFLAGS  = -s

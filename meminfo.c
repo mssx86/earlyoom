@@ -28,8 +28,9 @@ static long long get_entry(const char* name, const char* buf)
     errno = 0;
     long long val = strtoll(hit + strlen(name), NULL, 10);
     if (errno != 0) {
+        int strtoll_errno = errno;
         perror("get_entry: strtol() failed");
-        return -errno;
+        return -strtoll_errno;
     }
     return val;
 }
@@ -62,6 +63,8 @@ static long long available_guesstimate(const char* buf)
  */
 meminfo_t parse_meminfo()
 {
+    // Note that we do not need to close static FDs that we ensure to
+    // `fopen()` maximally once.
     static FILE* fd;
     static int guesstimate_warned = 0;
     // On Linux 5.3, "wc -c /proc/meminfo" counts 1391 bytes.
@@ -77,8 +80,11 @@ meminfo_t parse_meminfo()
     rewind(fd);
 
     size_t len = fread(buf, 1, sizeof(buf) - 1, fd);
+    if (ferror(fd)) {
+        fatal(103, "could not read /proc/meminfo: %s\n", strerror(errno));
+    }
     if (len == 0) {
-        fatal(102, "could not read /proc/meminfo: 0 bytes returned\n");
+        fatal(103, "could not read /proc/meminfo: 0 bytes returned\n");
     }
 
     m.MemTotalKiB = get_entry_fatal("MemTotal:", buf);
@@ -86,7 +92,7 @@ meminfo_t parse_meminfo()
     long long SwapFree = get_entry_fatal("SwapFree:", buf);
 
     long long MemAvailable = get_entry("MemAvailable:", buf);
-    if (MemAvailable == -1) {
+    if (MemAvailable < 0) {
         MemAvailable = available_guesstimate(buf);
         if (guesstimate_warned == 0) {
             fprintf(stderr, "Warning: Your kernel does not provide MemAvailable data (needs 3.14+)\n"
@@ -126,9 +132,10 @@ bool is_alive(int pid)
     // 10751 (cat) R 2663 10751 2663[...]
     char state;
     int res = fscanf(f, "%*d %*s %c", &state);
+    int fscanf_errno = errno;
     fclose(f);
     if (res < 1) {
-        warn("is_alive: fscanf() failed: %s\n", strerror(errno));
+        warn("is_alive: fscanf() failed: %s\n", strerror(fscanf_errno));
         return false;
     }
     debug("process state: %c\n", state);
@@ -196,6 +203,12 @@ int get_comm(int pid, char* out, size_t outlen)
         return -errno;
     }
     size_t n = fread(out, 1, outlen - 1, f);
+    if (ferror(f)) {
+        int fread_errno = errno;
+        perror("get_comm: fread() failed");
+        fclose(f);
+        return -fread_errno;
+    }
     fclose(f);
     // Process name may be empty, but we should get at least a newline
     // Example for empty process name: perl -MPOSIX -e '$0=""; pause'
@@ -245,6 +258,9 @@ long long get_vm_rss_kib(int pid)
     static long page_size;
     if (page_size == 0) {
         page_size = sysconf(_SC_PAGESIZE);
+        if (page_size <= 0) {
+            fatal(1, "could not read page size\n");
+        }
     }
 
     // Convert to kiB
