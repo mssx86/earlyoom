@@ -1,7 +1,6 @@
-CC       = cc 
-CPPFLAGS = -DVERSION=\"1.6.1-apathy\"
-CFLAGS   = -std=gnu99 -fstack-protector-all -O2 -w
-LDFLAGS  = -s -static
+CC       ?= x86_64-apathy-linux-musl-gcc
+CFLAGS   += -std=gnu99 -DVERSION=\"1.6.1-apathy\"
+LDFLAGS  += -s
 
 SRC      = $(wildcard *.c)
 OBJ      = ${SRC:.c=.o}
@@ -9,7 +8,7 @@ OBJ      = ${SRC:.c=.o}
 all: earlyoom
 
 .c.o:
-	${CC} -c ${CFLAGS} ${CPPFLAGS} $<
+	${CC} -c ${CFLAGS} $<
 
 earlyoom: ${OBJ}
 	${CC} -o $@ ${OBJ} ${LDFLAGS}
